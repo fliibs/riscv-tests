@@ -39,6 +39,7 @@ RISCV_PREFIX ?= riscv$(XLEN)-unknown-elf-
 RISCV_GCC ?= $(RISCV_PREFIX)gcc
 RISCV_GCC_OPTS ?= -static -mcmodel=medany -fvisibility=hidden -nostdlib -nostartfiles
 RISCV_OBJDUMP ?= $(RISCV_PREFIX)objdump --disassemble-all --disassemble-zeroes --section=.text --section=.text.startup --section=.text.init --section=.data
+RISCV_OBJCOPY ?= $(RISCV_PREFIX)objcopy
 RISCV_SIM ?= spike
 
 vpath %.S $(src_dir)
@@ -46,8 +47,13 @@ vpath %.S $(src_dir)
 #------------------------------------------------------------
 # Build assembly tests
 
+%.hex: %
+	$(RISCV_OBJCOPY) --verilog-data-width 4 --reverse-bytes=4 -O verilog --only-section=.text.init $< $@
+
 %.dump: %
 	$(RISCV_OBJDUMP) $< > $@
+	$(RISCV_OBJCOPY) --verilog-data-width 4 --reverse-bytes=4 -O verilog --only-section=.text.init --change-section-address .text.init=0x0 $< $<_itcm.hex
+	$(RISCV_OBJCOPY) --verilog-data-width 4 --reverse-bytes=4 -O verilog --only-section=.data --change-section-address .data=0x0 $< $<_data.hex
 
 %.out: %
 	$(RISCV_SIM) --isa=rv64gc_zfh_zicboz_svnapot_zicntr --misaligned $< 2> $@
@@ -102,6 +108,7 @@ $(eval $(call compile_template,rv64ssvnapot,-march=rv64g -mabi=lp64))
 $(eval $(call compile_template,rv64mi,-march=rv64g -mabi=lp64))
 endif
 
+tests_itcm_hex = $(addsuffix _itcm.hex, $(tests))
 tests_dump = $(addsuffix .dump, $(tests))
 tests_hex = $(addsuffix .hex, $(tests))
 tests_out = $(addsuffix .out, $(filter rv64%,$(tests)))
@@ -114,10 +121,11 @@ junk += $(tests) $(tests_dump) $(tests_hex) $(tests_out) $(tests32_out)
 #------------------------------------------------------------
 # Default
 
-all: $(tests_dump)
+all: $(tests_dump) $(tests_hex)
 
 #------------------------------------------------------------
 # Clean up
 
 clean:
 	rm -rf $(junk)
+	rm *.hex
