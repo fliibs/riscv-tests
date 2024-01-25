@@ -48,12 +48,12 @@ vpath %.S $(src_dir)
 # Build assembly tests
 
 %.hex: %
-	$(RISCV_OBJCOPY) --verilog-data-width 4 --reverse-bytes=4 -O verilog --only-section=.text.init $< $@
+	$(RISCV_OBJCOPY) --verilog-data-width 4 -O verilog --only-section=.text.init $< $@
 
 %.dump: %
 	$(RISCV_OBJDUMP) $< > $@
-	$(RISCV_OBJCOPY) --verilog-data-width 4 --reverse-bytes=4 -O verilog --only-section=.text.init --change-section-address .text.init=0x0 $< $<_itcm.hex
-	$(RISCV_OBJCOPY) --verilog-data-width 4 --reverse-bytes=4 -O verilog --only-section=.data --change-section-address .data=0x0 $< $<_data.hex
+	$(RISCV_OBJCOPY) --verilog-data-width 4 -O verilog --only-section=.text.init --change-section-address .text.init=0x0 $< $<_itcm.hex
+	$(RISCV_OBJCOPY) --verilog-data-width 4 -O verilog --only-section=.data --change-section-address .data=0x0 $< $<_data.hex
 
 %.out: %
 	$(RISCV_SIM) --isa=rv64gc_zfh_zicboz_svnapot_zicntr --misaligned $< 2> $@
@@ -67,9 +67,9 @@ $$($(1)_p_tests): $(1)-p-%: $(1)/%.S
 	$$(RISCV_GCC) $(2) $$(RISCV_GCC_OPTS) -I$(src_dir)/../env/p -I$(src_dir)/macros/scalar -T$(src_dir)/../env/p/link.ld $$< -o $$@
 $(1)_tests += $$($(1)_p_tests)
 
-$$($(1)_v_tests): $(1)-v-%: $(1)/%.S
-	$$(RISCV_GCC) $(2) $$(RISCV_GCC_OPTS) -DENTROPY=0x$$(shell echo \$$@ | md5sum | cut -c 1-7) -std=gnu99 -O2 -I$(src_dir)/../env/v -I$(src_dir)/macros/scalar -T$(src_dir)/../env/v/link.ld $(src_dir)/../env/v/entry.S $(src_dir)/../env/v/*.c $$< -o $$@
-$(1)_tests += $$($(1)_v_tests)
+# $$($(1)_v_tests): $(1)-v-%: $(1)/%.S
+#	$$(RISCV_GCC) $(2) $$(RISCV_GCC_OPTS) -DENTROPY=0x$$(shell echo \$$@ | md5sum | cut -c 1-7) -std=gnu99 -O2 -I$(src_dir)/../env/v -I$(src_dir)/macros/scalar -T$(src_dir)/../env/v/link.ld $(src_dir)/../env/v/entry.S $(src_dir)/../env/v/*.c $$< -o $$@
+# $(1)_tests += $$($(1)_v_tests)
 
 $(1)_tests_dump = $$(addsuffix .dump, $$($(1)_tests))
 
